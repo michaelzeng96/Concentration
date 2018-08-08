@@ -13,44 +13,34 @@ import UIKit
 // UIViewController knows everything about the UI, we are inheriting from it
 class ViewController: UIViewController {
 
-    lazy var game = Concentration(numberOfPairsOfCards: cardButtons.count / 2)
+    //don't want people to change how many cards are generated in our model
+    //since this value is currently tied initmately to our UI
+    private lazy var game = Concentration(numberOfPairsOfCards: numberOfPairsOfCards)
     
-    //add instance variable
-    var flipCount = 0 {
+    var numberOfPairsOfCards: Int {
+        get {
+            return (cardButtons.count / 2)
+        }
+    }
+    
+    //we don't want people to control how many flips we are recording
+    private(set) var flipCount = 0 {
         didSet {
             flipCountLabel.text = "Flips: \(flipCount)"
         }
     }
     
-    var score = 0 {
-        didSet {
-            scoreCountLabel.text = "Scores: \(scoreCountLabel)"
-        }
-    }
     
-    @IBOutlet weak var scoreCountLabel: UILabel!
+    //Outlets and Buttons are internally implementations of how UI looks
+    @IBOutlet private weak var scoreCountLabel: UILabel!
     
-    @IBOutlet weak var flipCountLabel: UILabel!
+    @IBOutlet private weak var flipCountLabel: UILabel!
     
     //array of UI Buttons
-    @IBOutlet var cardButtons: [UIButton]!
+    @IBOutlet private var cardButtons: [UIButton]!
     
-    //controller starts new game
-    @IBAction func startNewGame(_ sender: UIButton) {
-        //create new fresh board
-        game.newGame()
-        //wipe old dictionary
-        emoji = [Int:String]()
-        //restore old emoji lists
-        emojiThemes = restore()
-        //chose new theme
-        theme = chooseTheme()
-        flipCount = 0
-        //update view based on model update
-        updateViewFromModel()
-    }
     
-    @IBAction func touchCard(_ sender: UIButton) {
+    @IBAction private func touchCard(_ sender: UIButton) {
         flipCount += 1
         if let cardNumber = cardButtons.index(of: sender) {
             game.chooseCard(at: cardNumber)
@@ -62,7 +52,7 @@ class ViewController: UIViewController {
         }
     }
     
-    func updateViewFromModel() {
+    private func updateViewFromModel() {
         //update every button view and its respective model data
         for index in cardButtons.indices {
             // get UIButton and its respective card object
@@ -82,35 +72,31 @@ class ViewController: UIViewController {
     }
     
     
-    lazy var theme = chooseTheme()
-    let emojiThemeStore = [["😛", "😋", "😏", "😎", "😇", "😍"],
-                           ["😺", "😸","😹", "😻", "😼", "😽" ],
-                           ["🤲", "👐", "🙌", "👏", "🤝", "👍"]]
-    lazy var emojiThemes = emojiThemeStore
-    var emoji = [Int:String]()
+    private var emojiChoices = "😛😋😏😎😇😍"
+    private var emoji = [Card:String]()
     
-    func emojiForCard(for card: Card) -> String {
-        if emoji[card.identifier] == nil, emojiThemes.count > 0{
-            //if the card has an identifier, and we have emojis in the emojiTheme
-            if emojiThemes[theme].count > 0 {
-                let randomIndex = Int(arc4random_uniform(UInt32(emojiThemes[theme].count)))
-                emoji[card.identifier] = emojiThemes[theme].remove(at: randomIndex)
-            }
+    private func emojiForCard(for card: Card) -> String {
+        if emoji[card] == nil, emojiChoices.count > 0{
+            let randomStringIndex = emojiChoices.index(emojiChoices.startIndex, offsetBy: emojiChoices.count.arc4random)
+            emoji[card] = String(emojiChoices.remove(at: randomStringIndex))
         }
         //if our card identifier to emoji mapping exists, return the emoji, otherwise ?
-        return emoji[card.identifier] ?? "?"
+        return emoji[card] ?? "?"
     }
     
-    
-    func chooseTheme() -> Int{
-        //randomly choose an index from emojiChoices
-        return Int(arc4random_uniform(UInt32(emojiThemes.count)))
-    }
-    
-    func restore() -> [[String]] {
-        return emojiThemeStore
-    }
-    
+}
 
+//extension of int to generate random integer
+extension Int {
+    var arc4random: Int {
+        if self > 0 {
+            return Int(arc4random_uniform(UInt32(self)))
+        } else if self < 0 {
+            return -Int(arc4random_uniform(UInt32(abs(self))))
+        }
+        else{
+            return 0
+        }
+    }
 }
 
